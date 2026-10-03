@@ -71,6 +71,36 @@ This file records technical sources supporting the development of QA-Agent. Each
 - **Used for:** Installing the Temurin JDK on Windows and understanding how PATH and `JAVA_HOME` select the Java installation used by development tools.
 - **Accessed:** 3 October 2026.
 
+## Python AI Service
+
+### Python — Virtual Environments
+
+- **Organisation:** Python Software Foundation
+- **URL:** https://docs.python.org/3/library/venv.html
+- **Used for:** Creating an isolated Python environment and running its interpreter directly.
+- **Accessed:** 3 October 2026.
+
+### FastAPI — First Steps
+
+- **Organisation:** FastAPI
+- **URL:** https://fastapi.tiangolo.com/tutorial/first-steps/
+- **Used for:** Creating the application, defining the health endpoint, returning JSON, and using automatic API documentation.
+- **Accessed:** 3 October 2026.
+
+### FastAPI — Run a Server Manually
+
+- **Organisation:** FastAPI
+- **URL:** https://fastapi.tiangolo.com/deployment/manually/
+- **Used for:** Running the application with Uvicorn and understanding the application import string.
+- **Accessed:** 3 October 2026.
+
+### pip — pip freeze
+
+- **Organisation:** pip
+- **URL:** https://pip.pypa.io/en/stable/cli/pip_freeze/
+- **Used for:** Recording installed dependency versions in requirements.txt.
+- **Accessed:** 3 October 2026.
+
 ## Maintaining This File
 
 For each new source, record its organisation or author, title, URL, relevant section, use in QA-Agent, and actual access date. Link sources to the technical decisions they support. Distinguish documented behaviour from project-specific choices and troubleshooting hypotheses.
