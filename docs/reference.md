@@ -101,6 +101,26 @@ This file records technical sources supporting the development of QA-Agent. Each
 - **Used for:** Recording installed dependency versions in requirements.txt.
 - **Accessed:** 3 October 2026.
 
+## Backend-to-AI Service Communication
+
+### Spring Framework — REST Clients
+
+- **URL:** https://docs.spring.io/spring-framework/reference/integration/rest-clients.html
+- **Used for:** Creating a RestClient, sending GET requests, converting JSON into Java objects, and handling request errors.
+- **Accessed:** 4 October 2026.
+
+### Spring Framework — SimpleClientHttpRequestFactory
+
+- **URL:** https://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/http/client/SimpleClientHttpRequestFactory.html
+- **Used for:** Configuring connection and read timeouts.
+- **Accessed:** 4 October 2026.
+
+### Spring Boot — Externalized Configuration
+
+- **URL:** https://docs.spring.io/spring-boot/reference/features/external-config.html
+- **Used for:** Configuring the AI service URL with an environment variable and a default value.
+- **Accessed:** 4 October 2026.
+
 ## Maintaining This File
 
 For each new source, record its organisation or author, title, URL, relevant section, use in QA-Agent, and actual access date. Link sources to the technical decisions they support. Distinguish documented behaviour from project-specific choices and troubleshooting hypotheses.
