@@ -75,7 +75,7 @@ function RequirementForm() {
       const accepted: Requirement = await response.json()
       setSubmitted(accepted)
     } catch {
-      setError('Unable to submit the requirement. Check the backend and try again.')
+      setError('The server could not process the requirement. Please try again.')
     } finally {
       setSubmitting(false)
     }
