@@ -1,0 +1,133 @@
+import { useState } from 'react'
+import type { FormEvent } from 'react'
+
+type Requirement = {
+  title: string
+  description: string
+  acceptanceCriteria: string
+}
+
+function RequirementForm() {
+  const [title, setTitle] = useState('')
+  const [description, setDescription] = useState('')
+  const [acceptanceCriteria, setAcceptanceCriteria] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState('')
+  const [submitted, setSubmitted] = useState<Requirement | null>(null)
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+
+    if (submitting) return
+
+    setError('')
+    setSubmitted(null)
+
+    const requirement: Requirement = {
+      title: title.trim(),
+      description: description.trim(),
+      acceptanceCriteria: acceptanceCriteria.trim(),
+    }
+
+    if (
+      !requirement.title ||
+      !requirement.description ||
+      !requirement.acceptanceCriteria
+    ) {
+      setError('Complete all fields. Spaces alone are not accepted.')
+      return
+    }
+
+    setSubmitting(true)
+
+    try {
+      const response = await fetch('/api/requirements', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requirement),
+      })
+
+      if (!response.ok) {
+        const details: { message?: string } | null =
+          await response.json().catch(() => null)
+
+        setError(details?.message || 'The requirement could not be accepted.')
+        return
+      }
+
+      const accepted: Requirement = await response.json()
+      setSubmitted(accepted)
+    } catch {
+      setError('Unable to submit the requirement. Check the backend and try again.')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <section className="requirement-panel">
+      <h2>Submit a requirement</h2>
+      <p>
+        Enter a requirement to validate and preview it.
+        Requirements are not saved yet.
+      </p>
+
+      <form onSubmit={handleSubmit}>
+        <fieldset disabled={submitting}>
+          <legend>Requirement details</legend>
+
+          <label htmlFor="requirement-title">Title</label>
+          <input
+            id="requirement-title"
+            value={title}
+            onChange={(event) => setTitle(event.target.value)}
+            required
+          />
+
+          <label htmlFor="requirement-description">Description</label>
+          <textarea
+            id="requirement-description"
+            value={description}
+            onChange={(event) => setDescription(event.target.value)}
+            rows={4}
+            required
+          />
+
+          <label htmlFor="requirement-criteria">Acceptance criteria</label>
+          <textarea
+            id="requirement-criteria"
+            value={acceptanceCriteria}
+            onChange={(event) => setAcceptanceCriteria(event.target.value)}
+            rows={5}
+            required
+          />
+
+          <button type="submit">
+            {submitting ? 'Submitting...' : 'Submit requirement'}
+          </button>
+        </fieldset>
+      </form>
+
+      {error && <p role="alert">{error}</p>}
+
+      {submitted && (
+        <section className="requirement-preview">
+          <h3>Accepted requirement</h3>
+          <p role="status">
+            Validation passed. This preview will be lost when you refresh.
+          </p>
+
+          <h4>{submitted.title}</h4>
+          <p>{submitted.description}</p>
+
+          <h4>Acceptance criteria</h4>
+          <p>{submitted.acceptanceCriteria}</p>
+        </section>
+      )}
+    </section>
+  )
+}
+
+export default RequirementForm

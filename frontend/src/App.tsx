@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import './App.css'
+import RequirementForm from './RequirementForm'
 
 type ServiceStatus = 'checking' | 'connected' | 'unavailable'
 type AiServiceStatus = ServiceStatus | 'waiting' | 'cannot-check'
@@ -102,6 +103,7 @@ function App() {
           {aiServiceStatus === 'cannot-check' &&
             'Cannot check: backend unavailable'}
         </p>
+        <RequirementForm />
       </section>
     </main>
   )

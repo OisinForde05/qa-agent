@@ -121,6 +121,22 @@ This file records technical sources supporting the development of QA-Agent. Each
 - **Used for:** Configuring the AI service URL with an environment variable and a default value.
 - **Accessed:** 4 October 2026.
 
+## Requirement Submission
+
+- [Spring Framework — Request Body](https://docs.spring.io/spring-framework/reference/web/webmvc/mvc-controller/ann-methods/requestbody.html)
+  Used for receiving JSON and handling request validation.
+
+- [Spring Boot — Validation](https://docs.spring.io/spring-boot/reference/io/validation.html)
+  Used for adding Bean Validation support.
+
+- [React — Input](https://react.dev/reference/react-dom/components/input)
+  Used for controlled form inputs.
+
+- [React — Textarea](https://react.dev/reference/react-dom/components/textarea)
+  Used for controlled multiline fields.
+
+Accessed: 10 October 2026.
+
 ## Maintaining This File
 
 For each new source, record its organisation or author, title, URL, relevant section, use in QA-Agent, and actual access date. Link sources to the technical decisions they support. Distinguish documented behaviour from project-specific choices and troubleshooting hypotheses.
