@@ -7,6 +7,15 @@ type Requirement = {
   acceptanceCriteria: string
 }
 
+function isErrorResponse(data: unknown): data is { message: string } {
+  return (
+    typeof data === 'object' &&
+    data !== null &&
+    'message' in data &&
+    typeof data.message === 'string'
+  )
+}
+
 function RequirementForm() {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
@@ -50,10 +59,16 @@ function RequirementForm() {
       })
 
       if (!response.ok) {
-        const details: { message?: string } | null =
+        const details: unknown =
           await response.json().catch(() => null)
 
-        setError(details?.message || 'The requirement could not be accepted.')
+        if (response.status >= 500) {
+          setError('Backend unavailable. Check the backend and try again.')
+        } else if (isErrorResponse(details)) {
+          setError(details.message)
+        } else {
+          setError(`The requirement could not be accepted (HTTP ${response.status}).`)
+        }
         return
       }
 
