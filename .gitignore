@@ -9,6 +9,7 @@ build/
 target/
 *.class
 *.jar
+/backend/bin/
 
 __pycache__/
 *.pyc
