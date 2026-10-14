@@ -64,3 +64,19 @@
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
+
+.requirements-list {
+  margin-top: 2rem;
+}
+
+.requirement-card {
+  margin-top: 1rem;
+  padding: 1rem;
+  border: 1px solid #888;
+  border-radius: 6px;
+}
+
+.requirement-text {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}

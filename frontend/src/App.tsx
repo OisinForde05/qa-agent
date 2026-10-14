@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import './App.css'
 import RequirementForm from './RequirementForm'
+import RequirementList from './RequirementList'
 
 type ServiceStatus = 'checking' | 'connected' | 'unavailable'
 
@@ -14,6 +15,7 @@ function isHealthResponseUp(data: unknown): data is { status: 'UP' } {
 }
 
 function App() {
+  const [requirementsVersion, setRequirementsVersion] = useState(0)
   const [backendStatus, setBackendStatus] =
     useState<ServiceStatus>('checking')
 
@@ -69,8 +71,11 @@ function App() {
             'Unavailable. Check the backend and refresh this page.'}
         </p>
 
-        <RequirementForm />
+        <RequirementForm
+          onSaved={() => setRequirementsVersion((version) => version + 1)}
+        />
       </section>
+      <RequirementList refreshKey={requirementsVersion} />
     </main>
   )
 }

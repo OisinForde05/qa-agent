@@ -17,7 +17,11 @@ function isErrorResponse(data: unknown): data is { message: string } {
   )
 }
 
-function RequirementForm() {
+type RequirementFormProps = {
+  onSaved: () => void
+}
+
+function RequirementForm({ onSaved }: RequirementFormProps) {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [acceptanceCriteria, setAcceptanceCriteria] = useState('')
@@ -34,10 +38,10 @@ function RequirementForm() {
     setSubmitted(null)
 
     const requirement: Omit<Requirement, 'id'> = {
-  title: title.trim(),
-  description: description.trim(),
-  acceptanceCriteria: acceptanceCriteria.trim(),
-}
+      title: title.trim(),
+      description: description.trim(),
+      acceptanceCriteria: acceptanceCriteria.trim(),
+    }
 
     if (
       !requirement.title ||
@@ -75,6 +79,7 @@ function RequirementForm() {
 
       const accepted: Requirement = await response.json()
       setSubmitted(accepted)
+      onSaved()
     } catch {
       setError('The server could not process the requirement. Please try again.')
     } finally {
@@ -129,7 +134,7 @@ function RequirementForm() {
         <section className="requirement-preview">
           <h3>Saved requirement</h3>
           <p role="status">
-          Requirement #{submitted.id} was saved successfully.
+            Requirement #{submitted.id} was saved successfully.
           </p>
 
           <h4>{submitted.title}</h4>
