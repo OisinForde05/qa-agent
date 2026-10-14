@@ -3,7 +3,6 @@ import './App.css'
 import RequirementForm from './RequirementForm'
 
 type ServiceStatus = 'checking' | 'connected' | 'unavailable'
-type AiServiceStatus = ServiceStatus | 'waiting' | 'cannot-check'
 
 function isHealthResponseUp(data: unknown): data is { status: 'UP' } {
   return (
@@ -15,65 +14,39 @@ function isHealthResponseUp(data: unknown): data is { status: 'UP' } {
 }
 
 function App() {
-  const [backendStatus, setBackendStatus] = useState<ServiceStatus>('checking')
-  const [aiServiceStatus, setAiServiceStatus] =
-    useState<AiServiceStatus>('waiting')
+  const [backendStatus, setBackendStatus] =
+    useState<ServiceStatus>('checking')
 
   useEffect(() => {
     const controller = new AbortController()
 
-    async function checkServices() {
+    async function checkBackend() {
       try {
-        const backendResponse = await fetch('/api/health', {
+        const response = await fetch('/api/health', {
           signal: controller.signal,
         })
 
-        if (!backendResponse.ok) {
+        if (!response.ok) {
           throw new Error('Backend health request failed')
         }
 
-        const backendData: unknown = await backendResponse.json()
+        const data: unknown = await response.json()
 
-        if (!isHealthResponseUp(backendData)) {
+        if (!isHealthResponseUp(data)) {
           throw new Error('Unexpected backend health response')
         }
 
-        if (controller.signal.aborted) return
-        setBackendStatus('connected')
-        setAiServiceStatus('checking')
-      } catch {
-        if (controller.signal.aborted) return
-        setBackendStatus('unavailable')
-        setAiServiceStatus('cannot-check')
-        return
-      }
-
-      try {
-        const aiResponse = await fetch('/api/ai/health', {
-          signal: controller.signal,
-        })
-
-        if (!aiResponse.ok) {
-          throw new Error('AI service health request failed')
-        }
-
-        const aiData: unknown = await aiResponse.json()
-
-        if (!isHealthResponseUp(aiData)) {
-          throw new Error('Unexpected AI service health response')
-        }
-
         if (!controller.signal.aborted) {
-          setAiServiceStatus('connected')
+          setBackendStatus('connected')
         }
       } catch {
         if (!controller.signal.aborted) {
-          setAiServiceStatus('unavailable')
+          setBackendStatus('unavailable')
         }
       }
     }
 
-    checkServices()
+    checkBackend()
 
     return () => controller.abort()
   }, [])
@@ -83,7 +56,10 @@ function App() {
       <h1>QA-Agent</h1>
       <p>Requirement-driven test generation and automation.</p>
 
-      <section className="status-panel" aria-labelledby="backend-status-heading">
+      <section
+        className="status-panel"
+        aria-labelledby="backend-status-heading"
+      >
         <h2 id="backend-status-heading">Backend connection</h2>
 
         <p role="status" aria-labelledby="backend-status-heading">
@@ -93,16 +69,6 @@ function App() {
             'Unavailable. Check the backend and refresh this page.'}
         </p>
 
-        <h2 id="ai-status-heading">AI service connection</h2>
-
-        <p role="status" aria-labelledby="ai-status-heading">
-          {aiServiceStatus === 'waiting' && 'Waiting for backend check...'}
-          {aiServiceStatus === 'checking' && 'Checking connection...'}
-          {aiServiceStatus === 'connected' && 'Connected'}
-          {aiServiceStatus === 'unavailable' && 'Unavailable'}
-          {aiServiceStatus === 'cannot-check' &&
-            'Cannot check: backend unavailable'}
-        </p>
         <RequirementForm />
       </section>
     </main>
