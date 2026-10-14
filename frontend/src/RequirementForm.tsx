@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { FormEvent } from 'react'
 
 type Requirement = {
+  id: number
   title: string
   description: string
   acceptanceCriteria: string
@@ -32,11 +33,11 @@ function RequirementForm() {
     setError('')
     setSubmitted(null)
 
-    const requirement: Requirement = {
-      title: title.trim(),
-      description: description.trim(),
-      acceptanceCriteria: acceptanceCriteria.trim(),
-    }
+    const requirement: Omit<Requirement, 'id'> = {
+  title: title.trim(),
+  description: description.trim(),
+  acceptanceCriteria: acceptanceCriteria.trim(),
+}
 
     if (
       !requirement.title ||
@@ -84,10 +85,7 @@ function RequirementForm() {
   return (
     <section className="requirement-panel">
       <h2>Submit a requirement</h2>
-      <p>
-        Enter a requirement to validate and preview it.
-        Requirements are not saved yet.
-      </p>
+      <p>Enter a requirement to validate and save it.</p>
 
       <form onSubmit={handleSubmit}>
         <fieldset disabled={submitting}>
@@ -129,9 +127,9 @@ function RequirementForm() {
 
       {submitted && (
         <section className="requirement-preview">
-          <h3>Accepted requirement</h3>
+          <h3>Saved requirement</h3>
           <p role="status">
-            Validation passed. This preview will be lost when you refresh.
+          Requirement #{submitted.id} was saved successfully.
           </p>
 
           <h4>{submitted.title}</h4>
