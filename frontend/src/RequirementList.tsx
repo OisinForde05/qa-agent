@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import TestCaseGenerator from './TestCaseGenerator'
 
 type Requirement = {
   id: number
@@ -104,6 +105,10 @@ function RequirementList({ refreshKey }: RequirementListProps) {
           <p className="requirement-text">
             {requirement.acceptanceCriteria}
           </p>
+          <TestCaseGenerator
+            key={requirement.id}
+            requirementId={requirement.id}
+          />
         </article>
       ))}
     </section>

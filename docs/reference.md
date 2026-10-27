@@ -92,3 +92,5 @@ Accessed: 10 October 2026.
 For each new source, record its organisation or author, title, URL, relevant section, use in QA-Agent, and actual access date. Link sources to the technical decisions they support. Distinguish documented behaviour from project-specific choices and troubleshooting hypotheses.
 
 These are implementation references. A formal literature review should also cite relevant research studies and follow the referencing style required by the module.
+
+- MDN Fetch API: https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API/Using_Fetch
