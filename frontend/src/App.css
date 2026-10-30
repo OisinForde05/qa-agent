@@ -137,3 +137,15 @@
   padding: 0.75rem;
   border-left: 4px solid #c53030;
 }
+
+.generation-history {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.generation-history select {
+  max-width: 100%;
+  padding: 0.5rem;
+}
