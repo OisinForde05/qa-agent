@@ -1,0 +1,2 @@
+ALTER TABLE generated_test_cases
+ADD COLUMN version BIGINT NOT NULL DEFAULT 0;

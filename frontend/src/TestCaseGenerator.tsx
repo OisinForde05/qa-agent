@@ -1,21 +1,14 @@
 import { useEffect, useState } from 'react'
-
-type DraftTestCase = {
-  id: number
-  status: 'DRAFT'
-  title: string
-  preconditions: string[]
-  steps: string[]
-  expectedResult: string
-}
+import TestCaseCard from './TestCaseCard'
+import { isSavedTestCase } from './testCaseTypes'
+import type { SavedTestCase } from './testCaseTypes'
 
 type GenerationResult = {
   id: number
   requirementId: number
   createdAt: string
   modelName: string
-  status: 'DRAFT'
-  testCases: DraftTestCase[]
+  testCases: SavedTestCase[]
   requirementIssues: string[]
 }
 
@@ -34,18 +27,6 @@ function isStringArray(value: unknown): value is string[] {
   )
 }
 
-function isDraftTestCase(value: unknown): value is DraftTestCase {
-  return (
-    isObject(value) &&
-    typeof value.id === 'number' &&
-    value.status === 'DRAFT' &&
-    typeof value.title === 'string' &&
-    isStringArray(value.preconditions) &&
-    isStringArray(value.steps) &&
-    typeof value.expectedResult === 'string'
-  )
-}
-
 function isGenerationResult(value: unknown): value is GenerationResult {
   return (
     isObject(value) &&
@@ -53,9 +34,8 @@ function isGenerationResult(value: unknown): value is GenerationResult {
     typeof value.requirementId === 'number' &&
     typeof value.createdAt === 'string' &&
     typeof value.modelName === 'string' &&
-    value.status === 'DRAFT' &&
     Array.isArray(value.testCases) &&
-    value.testCases.every(isDraftTestCase) &&
+    value.testCases.every(isSavedTestCase) &&
     isStringArray(value.requirementIssues) &&
     (value.testCases.length > 0 || value.requirementIssues.length > 0)
   )
@@ -68,68 +48,80 @@ function TestCaseGenerator({ requirementId }: Props) {
   const [history, setHistory] = useState<GenerationResult[]>([])
   const [loadingHistory, setLoadingHistory] = useState(true)
 
-useEffect(() => {
-  const controller = new AbortController()
+  useEffect(() => {
+    const controller = new AbortController()
 
-  async function loadHistory() {
-    setLoadingHistory(true)
-    setError('')
-    setResult(null)
-    setHistory([])
+    async function loadHistory() {
+      setLoadingHistory(true)
+      setError('')
+      setResult(null)
+      setHistory([])
 
-    try {
-      const response = await fetch(
-        `/api/requirements/${requirementId}/test-generations`,
-        { signal: controller.signal },
-      )
-
-      const data: unknown = await response.json().catch(() => null)
-
-      if (!response.ok) {
-        const message =
-          isObject(data) && typeof data.message === 'string'
-            ? data.message
-            : 'Could not load saved generations. Refresh to try again.'
-
-        throw new Error(message)
-      }
-
-      if (
-        !Array.isArray(data) ||
-        !data.every(isGenerationResult)
-      ) {
-        throw new Error('The backend returned unexpected generation history.')
-      }
-
-      const generations: GenerationResult[] = data
-
-      if (generations.some((item) => item.requirementId !== requirementId)) {
-        throw new Error('The generation history belongs to another requirement.')
-      }
-
-      if (!controller.signal.aborted) {
-        setHistory(generations)
-        setResult(generations[0] ?? null)
-      }
-    } catch (error) {
-      if (!controller.signal.aborted) {
-        setError(
-          error instanceof Error
-            ? error.message
-            : 'Could not load saved generations.',
+      try {
+        const response = await fetch(
+          `/api/requirements/${requirementId}/test-generations`,
+          { signal: controller.signal },
         )
-      }
-    } finally {
-      if (!controller.signal.aborted) {
-        setLoadingHistory(false)
+
+        const data: unknown = await response.json().catch(() => null)
+
+        if (!response.ok) {
+          const message =
+            isObject(data) && typeof data.message === 'string'
+              ? data.message
+              : 'Could not load saved generations. Refresh to try again.'
+
+          throw new Error(message)
+        }
+
+        if (!Array.isArray(data) || !data.every(isGenerationResult)) {
+          throw new Error('The backend returned unexpected generation history.')
+        }
+
+        const generations: GenerationResult[] = data
+
+        if (generations.some((item) => item.requirementId !== requirementId)) {
+          throw new Error('The generation history belongs to another requirement.')
+        }
+
+        if (!controller.signal.aborted) {
+          setHistory(generations)
+          setResult(generations[0] ?? null)
+        }
+      } catch (error) {
+        if (!controller.signal.aborted) {
+          setError(
+            error instanceof Error
+              ? error.message
+              : 'Could not load saved generations.',
+          )
+        }
+      } finally {
+        if (!controller.signal.aborted) {
+          setLoadingHistory(false)
+        }
       }
     }
+
+    void loadHistory()
+
+    return () => controller.abort()
+  }, [requirementId])
+
+  function handleCaseSaved(updatedCase: SavedTestCase) {
+    function updateGeneration(generation: GenerationResult): GenerationResult {
+      return {
+        ...generation,
+        testCases: generation.testCases.map((testCase) =>
+          testCase.id === updatedCase.id ? updatedCase : testCase,
+        ),
+      }
+    }
+
+    setHistory((previous) => previous.map(updateGeneration))
+    setResult((previous) => (previous === null ? null : updateGeneration(previous)))
   }
 
-  void loadHistory()
-
-  return () => controller.abort()
-}, [requirementId])
   async function handleGenerate() {
     if (generating || loadingHistory) return
 
@@ -165,10 +157,7 @@ useEffect(() => {
         return
       }
 
-      if (
-        !isGenerationResult(data) ||
-        data.requirementId !== requirementId
-      ) {
+      if (!isGenerationResult(data) || data.requirementId !== requirementId) {
         setError('The backend returned an unexpected response.')
         return
       }
@@ -192,8 +181,8 @@ useEffect(() => {
       <h4>AI-generated test cases</h4>
 
       <p>
-        Generated cases are saved as drafts for human review.
-        Generating again adds a new version and keeps earlier results.
+        New test cases are saved as drafts. Review and edit each case,
+        then approve or reject it. Generating again keeps earlier generations.
       </p>
 
       <button
@@ -204,9 +193,7 @@ useEffect(() => {
         {generating ? 'Generating...' : 'Generate test cases'}
       </button>
 
-      {loadingHistory && (
-        <p role="status">Loading saved generations...</p>
-      )}
+      {loadingHistory && <p role="status">Loading saved generations...</p>}
 
       {history.length > 0 && (
         <div className="generation-history">
@@ -244,8 +231,7 @@ useEffect(() => {
       {result && (
         <div className="generation-results">
           <p role="status">
-            Showing {result.testCases.length} saved draft test cases
-            from generation #{result.id}.
+            Showing {result.testCases.length} saved test cases from generation #{result.id}.
           </p>
 
           <p>
@@ -276,33 +262,12 @@ useEffect(() => {
             </p>
           )}
 
-          {result.testCases.map((testCase, index) => (
-            <article className="draft-test-case" key={testCase.id}>
-              <h5>
-                {index + 1}. {testCase.title}
-              </h5>
-
-              <h6>Preconditions</h6>
-              {testCase.preconditions.length > 0 ? (
-                <ul>
-                  {testCase.preconditions.map((condition, conditionIndex) => (
-                    <li key={conditionIndex}>{condition}</li>
-                  ))}
-                </ul>
-              ) : (
-                <p>None specified.</p>
-              )}
-
-              <h6>Steps</h6>
-              <ol>
-                {testCase.steps.map((step, stepIndex) => (
-                  <li key={stepIndex}>{step}</li>
-                ))}
-              </ol>
-
-              <h6>Expected result</h6>
-              <p>{testCase.expectedResult}</p>
-            </article>
+          {result.testCases.map((testCase) => (
+            <TestCaseCard
+              key={testCase.id}
+              testCase={testCase}
+              onSaved={handleCaseSaved}
+            />
           ))}
         </div>
       )}

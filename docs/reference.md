@@ -1,96 +1,87 @@
-# QA-Agent Development References
+## AI Test Case Generation
 
-This file records technical sources supporting the development of QA-Agent. Each entry explains how the source relates to the project. Add new references as features are developed; research papers for the literature review can be recorded separately.
+### 9. Google — Gemini API: Generating Content
 
-## Frontend
+- **Organisation:** Google.
+- **URL:** https://ai.google.dev/api/generate-content
+- **Relevant sections:** generateContent; request body; generation configuration; response candidates.
+- **Used for:** Calling Gemini from `GeminiClient.java`, sending requirement details and system instructions, and reading generated content and finish reasons.
+- **Accessed:** 3 November 2026.
 
-### 1. Vite — Getting Started
+### 10. Google — Gemini API: Structured Outputs
 
-- **Organisation:** Vite
-- **URL:** https://vite.dev/guide/
-- **Relevant sections:** Scaffolding Your First Vite Project; Command Line Interface.
-- **Used for:** Creating the React and TypeScript frontend, understanding Node.js requirements, and running the development server and production build.
-- **Accessed:** 3 October 2026.
+- **Organisation:** Google.
+- **URL:** https://ai.google.dev/gemini-api/docs/structured-output
+- **Relevant sections:** Structured output examples; JSON Schema support.
+- **Used for:** Defining the JSON structure for generated test cases and requirement clarification questions. The backend also validates the returned data before accepting it.
+- **Note:** A response matching the schema does not guarantee correct test cases or complete requirements coverage. Human review is still required.
+- **Accessed:** 3 November 2026.
 
-### 2. React — useState
+## Database Persistence
 
-- **Organisation:** React
-- **URL:** https://react.dev/reference/react/useState
-- **Relevant sections:** Reference; Adding state to a component.
-- **Used for:** Storing the backend connection status in `App.tsx` and updating the displayed status when the health request succeeds or fails.
-- **Accessed:** 3 October 2026.
+### 11. Spring Boot — Database Initialization
 
-### 3. React — useEffect
+- **Organisation:** Spring.
+- **URL:** https://docs.spring.io/spring-boot/how-to/data-initialization.html
+- **Relevant sections:** Initialize a Database Using Hibernate; Execute Flyway Database Migrations on Startup.
+- **Used for:** Managing database changes through versioned SQL files in `backend/src/main/resources/db/migration/`. Migrations create the requirement and generation tables and add the test-case version column. Hibernate uses `ddl-auto=validate` to check the entity mappings against the database.
+- **Accessed:** 3 November 2026.
 
-- **Organisation:** React
-- **URL:** https://react.dev/reference/react/useEffect
-- **Relevant sections:** Connecting to an external system; Fetching data with Effects; Troubleshooting.
-- **Used for:** Requesting backend health when the component mounts, cleaning up the request, and understanding the extra development setup/cleanup cycle under Strict Mode.
-- **Accessed:** 3 October 2026.
+### 12. Spring Data JPA — Transactionality
 
-### 4. Vite — Server Options
+- **Organisation:** Spring.
+- **URL:** https://docs.spring.io/spring-data/jpa/reference/jpa/transactions.html
+- **Relevant sections:** Service-level transaction boundaries; transactional query methods; read-only transactions.
+- **Used for:** Applying `@Transactional` in `TestGenerationStore.java` and `TestCaseReviewService.java`. A generation and its related records are saved within one transaction. Saved results are converted into response objects within the transaction.
+- **Accessed:** 3 November 2026.
 
-- **Organisation:** Vite
-- **URL:** https://vite.dev/config/server-options#server-proxy
-- **Relevant section:** `server.proxy`.
-- **Used for:** Configuring the frontend development server to forward `/api` requests to the Spring Boot backend at `http://localhost:8080`. This is a development proxy; production routing requires its own configuration.
-- **Accessed:** 3 October 2026.
+## Test Case Editing and Review
 
-## Backend and Java Setup
+### 13. Spring Framework — Spring MVC Validation
 
-### 5. Spring — Building a RESTful Web Service
+- **Organisation:** Spring.
+- **URL:** https://docs.spring.io/spring-framework/reference/web/webmvc/mvc-controller/ann-validation.html
+- **Relevant sections:** Validation of request bodies; MethodArgumentNotValidException; validation error handling.
+- **Used for:** Validating `TestCaseUpdateRequest.java` and `TestCaseReviewRequest.java` through `@Valid` in `TestCaseReviewController.java`. Invalid requests receive HTTP 400 responses with validation messages.
+- **Accessed:** 3 November 2026.
 
-- **Organisation:** Spring
-- **URL:** https://spring.io/guides/gs/rest-service/
-- **Relevant sections:** Starting with Spring Initializr; Create a Resource Controller; Run the Service.
-- **Used for:** Creating the Spring Boot backend and understanding `@RestController`, `@GetMapping`, and returning JSON from an HTTP endpoint such as `/api/health`.
-- **Accessed:** 3 October 2026.
+### 14. Jakarta Persistence — Version
 
-### 6. Spring Boot — System Requirements
+- **Organisation:** Eclipse Foundation, Jakarta Persistence.
+- **URL:** https://jakarta.ee/specifications/persistence/3.2/apidocs/jakarta.persistence/jakarta/persistence/Version.html
+- **Relevant sections:** Version fields; optimistic lock failures.
+- **Used for:** Adding `@Version` to `GeneratedTestCase.java` to detect conflicting database updates. The application also compares the version submitted by the frontend with the stored version to reject edits based on outdated data.
+- **Note:** Returning HTTP 409 and asking the user to refresh are QA-Agent implementation choices.
+- **Accessed:** 3 November 2026.
 
-- **Organisation:** Spring
-- **URL:** https://docs.spring.io/spring-boot/4.1/system-requirements.html
-- **Relevant sections:** Java compatibility; Build Tool Support.
-- **Used for:** Checking Java and Maven compatibility for the Spring Boot version used by the backend. The project currently targets Java 21 and uses Spring Boot 4.1.1.
-- **Accessed:** 3 October 2026.
-- **Note:** Documentation URLs may redirect to a newer release. Check the version shown against `backend/pom.xml` when revisiting this source.
+### 15. React — Updating Arrays in State
 
-### 7. Spring Boot — Testing Spring Boot Applications
+- **Organisation:** React.
+- **URL:** https://react.dev/learn/updating-arrays-in-state
+- **Relevant sections:** Updating arrays without mutation; replacing items in an array; updating objects inside arrays.
+- **Used for:** Updating edited test cases in `TestCaseGenerator.tsx` with `map()`, keeping the displayed generation and history consistent. Also supports adding, updating, and removing preconditions and steps in `TestCaseCard.tsx`.
+- **Accessed:** 3 November 2026.
 
-- **Organisation:** Spring
-- **URL:** https://docs.spring.io/spring-boot/4.1/reference/testing/spring-boot-applications.html
-- **Relevant section:** Detecting Test Configuration.
-- **Used for:** Understanding how `@SpringBootTest` searches for application configuration and investigating the “Unable to find a @SpringBootConfiguration” test error. This documents configuration discovery; it does not establish the cause of disappearing compiled files in a particular development environment.
-- **Accessed:** 3 October 2026.
+### 16. MDN — Using the Fetch API
 
-### 8. Eclipse Adoptium — Windows MSI Installer Packages
+- **Organisation:** MDN Web Docs.
+- **URL:** https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API/Using_Fetch
+- **Relevant sections:** Making a request; setting the method and body; checking response status; reading JSON; cancelling a request.
+- **Used for:** Sending frontend requests for requirements, generation, saved history, editing, and review. Supports checking `response.ok`, handling JSON responses, and using `AbortController` for request cancellation.
+- **Note:** HTTP error responses do not automatically reject the fetch promise, so the application checks the response status explicitly.
+- **Accessed:** 3 November 2026.
 
-- **Organisation:** Eclipse Adoptium
-- **URL:** https://adoptium.net/installation/windows/
-- **Relevant sections:** Installation options for PATH and `JAVA_HOME`.
-- **Used for:** Installing the Temurin JDK on Windows and understanding how PATH and `JAVA_HOME` select the Java installation used by development tools.
-- **Accessed:** 3 October 2026.
+## Project-Specific Review Rules
 
-## Requirement Submission
+The following are QA-Agent design decisions rather than requirements
+prescribed by the documentation above:
 
-- [Spring Framework — Request Body](https://docs.spring.io/spring-framework/reference/web/webmvc/mvc-controller/ann-methods/requestbody.html)
-  Used for receiving JSON and handling request validation.
-
-- [Spring Boot — Validation](https://docs.spring.io/spring-boot/reference/io/validation.html)
-  Used for adding Bean Validation support.
-
-- [React — Input](https://react.dev/reference/react-dom/components/input)
-  Used for controlled form inputs.
-
-- [React — Textarea](https://react.dev/reference/react-dom/components/textarea)
-  Used for controlled multiline fields.
-
-Accessed: 10 October 2026.
-
-## Maintaining This File
-
-For each new source, record its organisation or author, title, URL, relevant section, use in QA-Agent, and actual access date. Link sources to the technical decisions they support. Distinguish documented behaviour from project-specific choices and troubleshooting hypotheses.
-
-These are implementation references. A formal literature review should also cite relevant research studies and follow the referencing style required by the module.
-
-- MDN Fetch API: https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API/Using_Fetch
+- Newly generated test cases start with the status `DRAFT`.
+- Users can approve or reject individual saved test cases.
+- Saving an edit returns the case to `DRAFT` so the changed content
+  requires another review.
+- Generating again creates a separate generation and preserves
+  earlier generations.
+- Each generation records the model name and creation time.
+- Requests based on an outdated test-case version are rejected
+  instead of silently overwriting newer changes.

@@ -15,6 +15,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OrderColumn;
 import jakarta.persistence.Table;
+import jakarta.persistence.Version;
 
 @Entity
 @Table(name = "generated_test_cases")
@@ -23,6 +24,10 @@ public class GeneratedTestCase {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Version
+    @Column(nullable = false)
+    private Long version;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "generation_id", nullable = false)
@@ -73,6 +78,10 @@ public class GeneratedTestCase {
         return id;
     }
 
+    public Long getVersion() {
+        return version;
+    }
+
     public String getTitle() {
         return title;
     }
@@ -91,5 +100,35 @@ public class GeneratedTestCase {
 
     public List<String> getSteps() {
         return steps;
+    }
+
+    public void updateDetails(
+        String title,
+        List<String> preconditions,
+        List<String> steps,
+        String expectedResult
+    ) {
+        this.title = title.strip();
+        this.expectedResult = expectedResult.strip();
+
+        this.preconditions.clear();
+        this.preconditions.addAll(
+            preconditions.stream().map(String::strip).toList()
+        );
+
+        this.steps.clear();
+        this.steps.addAll(
+            steps.stream().map(String::strip).toList()
+        );
+
+        this.status = "DRAFT";
+    }
+
+    public void approve() {
+        this.status = "APPROVED";
+    }
+
+    public void reject() {
+        this.status = "REJECTED";
     }
 }

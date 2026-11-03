@@ -149,3 +149,51 @@
   max-width: 100%;
   padding: 0.5rem;
 }
+
+.test-case-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.test-case-edit-form label {
+  display: block;
+  margin-top: 0.75rem;
+}
+
+.test-case-edit-form input,
+.test-case-edit-form textarea {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  margin-top: 0.35rem;
+  padding: 0.5rem;
+}
+
+.test-case-list-editor {
+  margin-top: 1rem;
+}
+
+.test-case-list-editor > div {
+  margin-bottom: 0.75rem;
+}
+
+.case-status {
+  display: inline-block;
+  padding: 0.2rem 0.5rem;
+  border: 1px solid currentColor;
+  border-radius: 4px;
+}
+
+.case-status-draft {
+  color: #a16207;
+}
+
+.case-status-approved {
+  color: #15803d;
+}
+
+.case-status-rejected {
+  color: #dc2626;
+}
