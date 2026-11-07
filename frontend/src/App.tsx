@@ -53,28 +53,39 @@ function App() {
     return () => controller.abort()
   }, [])
 
-  return (
+    return (
     <main className="app">
-      <h1>QA-Agent</h1>
-      <p>Requirement-driven test generation and automation.</p>
+      <header className="app-header">
+        <div>
+          <h1>QA-Agent</h1>
+          <p className="app-description">
+            Turn requirements into test cases you can review and approve.
+          </p>
+        </div>
 
-      <section
-        className="status-panel"
-        aria-labelledby="backend-status-heading"
-      >
-        <h2 id="backend-status-heading">Backend connection</h2>
+        <div
+          className={`connection-status connection-status-${backendStatus}`}
+          role="status"
+        >
+          <span className="connection-dot" aria-hidden="true" />
+          {backendStatus === 'checking' && 'Backend: checking...'}
+          {backendStatus === 'connected' && 'Backend: connected'}
+          {backendStatus === 'unavailable' && 'Backend: unavailable'}
+        </div>
+      </header>
 
-        <p role="status" aria-labelledby="backend-status-heading">
-          {backendStatus === 'checking' && 'Checking connection...'}
-          {backendStatus === 'connected' && 'Connected'}
-          {backendStatus === 'unavailable' &&
-            'Unavailable. Check the backend and refresh this page.'}
+      {backendStatus === 'unavailable' && (
+        <p className="connection-notice">
+          Cannot connect to the backend. Start it and refresh this page.
         </p>
+      )}
 
+      <div className="form-panel">
         <RequirementForm
           onSaved={() => setRequirementsVersion((version) => version + 1)}
         />
-      </section>
+      </div>
+
       <RequirementList refreshKey={requirementsVersion} />
     </main>
   )
