@@ -93,22 +93,31 @@ function RequirementList({ refreshKey }: RequirementListProps) {
 
       {!loading && !error && requirements.map((requirement) => (
         <article className="requirement-card" key={requirement.id}>
-          <h3>{requirement.title}</h3>
-          <p>Requirement #{requirement.id}</p>
+          <details className="requirement-details">
+            <summary className="requirement-summary">
+              <h3>{requirement.title}</h3>
+              <span className="requirement-id">
+                Requirement #{requirement.id}
+              </span>
+            </summary>
 
-          <h4>Description</h4>
-          <p className="requirement-text">
-            {requirement.description}
-          </p>
+            <div className="requirement-details-content">
+              <h4>Description</h4>
+              <p className="requirement-text">
+                {requirement.description}
+              </p>
 
-          <h4>Acceptance criteria</h4>
-          <p className="requirement-text">
-            {requirement.acceptanceCriteria}
-          </p>
-          <TestCaseGenerator
-            key={requirement.id}
-            requirementId={requirement.id}
-          />
+              <h4>Acceptance criteria</h4>
+              <p className="requirement-text">
+                {requirement.acceptanceCriteria}
+              </p>
+
+              <TestCaseGenerator
+                key={requirement.id}
+                requirementId={requirement.id}
+              />
+            </div>
+          </details>
         </article>
       ))}
     </section>

@@ -338,3 +338,52 @@
     padding: 16px;
   }
 }
+
+.requirement-summary {
+  padding: 4px;
+  cursor: pointer;
+  border-radius: 6px;
+  overflow-wrap: anywhere;
+}
+
+.requirement-summary::marker {
+  color: #475569;
+}
+
+.requirement-summary h3 {
+  display: inline;
+  margin: 0;
+  font-size: 1.1rem;
+  line-height: 1.5;
+}
+
+.requirement-id {
+  display: block;
+  margin-top: 6px;
+  color: #526074;
+  font-size: 0.85rem;
+  font-weight: 400;
+}
+
+.requirement-summary:hover {
+  background: #f1f5f9;
+}
+
+.requirement-summary:focus-visible {
+  outline: 3px solid #2563eb;
+  outline-offset: 4px;
+}
+
+.requirement-details[open] > .requirement-summary {
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e2e8f0;
+  border-radius: 0;
+}
+
+.requirement-details-content {
+  padding-top: 8px;
+}
+
+.requirement-details-content > h4 {
+  margin: 16px 0 8px;
+}
