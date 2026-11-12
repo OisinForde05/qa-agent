@@ -36,8 +36,7 @@ function isGenerationResult(value: unknown): value is GenerationResult {
     typeof value.modelName === 'string' &&
     Array.isArray(value.testCases) &&
     value.testCases.every(isSavedTestCase) &&
-    isStringArray(value.requirementIssues) &&
-    (value.testCases.length > 0 || value.requirementIssues.length > 0)
+    isStringArray(value.requirementIssues)
   )
 }
 
@@ -120,6 +119,20 @@ function TestCaseGenerator({ requirementId }: Props) {
 
     setHistory((previous) => previous.map(updateGeneration))
     setResult((previous) => (previous === null ? null : updateGeneration(previous)))
+  }
+
+  function handleCaseDeleted(testCaseId: number) {
+    function removeCase(generation: GenerationResult): GenerationResult {
+      return {
+        ...generation,
+        testCases: generation.testCases.filter(
+          (testCase) => testCase.id !== testCaseId,
+        ),
+      }
+    }
+
+    setHistory((previous) => previous.map(removeCase))
+    setResult((previous) => (previous ? removeCase(previous) : null))
   }
 
   async function handleGenerate() {
@@ -256,9 +269,10 @@ function TestCaseGenerator({ requirementId }: Props) {
           )}
 
           {result.testCases.length === 0 && (
-            <p>
-              No reliable test cases were generated. Review the questions
-              above before trying again.
+            <p className="generation-empty" role="status">
+              {result.requirementIssues.length > 0
+                ? 'No test cases are saved in this generation. Review the requirement issues above.'
+                : 'No test cases remain in this generation.'}
             </p>
           )}
 
@@ -267,6 +281,7 @@ function TestCaseGenerator({ requirementId }: Props) {
               key={testCase.id}
               testCase={testCase}
               onSaved={handleCaseSaved}
+              onDeleted={handleCaseDeleted}
             />
           ))}
         </div>

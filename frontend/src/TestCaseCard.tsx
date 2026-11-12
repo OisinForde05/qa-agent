@@ -6,6 +6,7 @@ import type { SavedTestCase } from './testCaseTypes'
 type Props = {
   testCase: SavedTestCase
   onSaved: (testCase: SavedTestCase) => void
+  onDeleted: (id: number) => void
 }
 
 type EditableFields = Pick<
@@ -67,9 +68,10 @@ function ListEditor({ label, items, onChange }: ListEditorProps) {
   )
 }
 
-function TestCaseCard({ testCase, onSaved }: Props) {
+function TestCaseCard({ testCase, onSaved, onDeleted }: Props) {
   const [editing, setEditing] = useState(false)
   const [busy, setBusy] = useState(false)
+  const [deleting, setDeleting] = useState(false)
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
   const [form, setForm] = useState(() => editableFields(testCase))
@@ -169,6 +171,73 @@ function TestCaseCard({ testCase, onSaved }: Props) {
       version: testCase.version,
       status,
     })
+  }
+
+  async function handleDelete() {
+    if (busy) return
+
+    const confirmed = window.confirm(
+      `Permanently delete "${testCase.title}"? This cannot be undone.`,
+    )
+
+    if (!confirmed) return
+
+    setBusy(true)
+    setDeleting(true)
+    setError('')
+    setMessage('')
+
+    const controller = new AbortController()
+    const timeout = window.setTimeout(() => controller.abort(), 30000)
+
+    try {
+      const response = await fetch(`/api/test-cases/${testCase.id}`, {
+        method: 'DELETE',
+        signal: controller.signal,
+      })
+
+      if (!response.ok) {
+        const details: unknown = await response.json().catch(() => null)
+
+        const message =
+          typeof details === 'object' &&
+          details !== null &&
+          'message' in details &&
+          typeof details.message === 'string'
+            ? details.message
+            : `Could not delete the test case (HTTP ${response.status}).`
+
+        throw new Error(message)
+      }
+
+      if (response.status !== 204) {
+        throw new Error(
+          'Unexpected deletion response. Refresh to check whether the case was deleted.',
+        )
+      }
+
+      onDeleted(testCase.id)
+    } catch (error) {
+      if (controller.signal.aborted) {
+        setError(
+          'The deletion request timed out. Refresh to check whether the case was deleted.',
+        )
+      } else if (error instanceof TypeError) {
+        setError(
+          'Could not confirm deletion. Check the backend and refresh before trying again.',
+        )
+      } else {
+        setError(
+          error instanceof Error
+            ? error.message
+            : 'Could not delete the test case.',
+        )
+      }
+    } finally {
+      window.clearTimeout(timeout)
+      setBusy(false)
+      setDeleting(false)
+    }
   }
 
   return (
@@ -286,11 +355,20 @@ function TestCaseCard({ testCase, onSaved }: Props) {
             >
               Reject
             </button>
+
+            <button
+              type="button"
+              className="delete-test-case-button"
+              onClick={handleDelete}
+              disabled={busy}
+            >
+              {deleting ? 'Deleting...' : 'Delete'}
+            </button>
           </div>
         </>
       )}
 
-      {busy && <p role="status">Saving change...</p>}
+      {busy && <p role="status">{deleting ? 'Deleting test case...' : 'Saving change...'}</p>}
       {error && <p role="alert">{error}</p>}
       {message && <p role="status">{message}</p>}
     </article>

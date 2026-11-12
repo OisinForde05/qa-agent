@@ -276,6 +276,26 @@
   outline-offset: 3px;
 }
 
+.test-case-actions .delete-test-case-button {
+  color: #991b1b;
+  background: #fff;
+  border-color: #fca5a5;
+}
+
+.test-case-actions .delete-test-case-button:hover:not(:disabled) {
+  background: #fef2f2;
+  border-color: #dc2626;
+}
+
+.generation-empty {
+  margin-top: 16px;
+  padding: 16px;
+  color: #475569;
+  background: #f1f5f9;
+  border: 1px dashed #94a3b8;
+  border-radius: 8px;
+}
+
 .test-case-edit-form label {
   display: block;
   margin-top: 0.75rem;
