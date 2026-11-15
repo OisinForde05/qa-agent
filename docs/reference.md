@@ -85,3 +85,12 @@ prescribed by the documentation above:
 - Each generation records the model name and creation time.
 - Requests based on an outdated test-case version are rejected
   instead of silently overwriting newer changes.
+
+## Requirement Deletion
+
+- [Spring Data JPA — Transactionality](https://docs.spring.io/spring-data/jpa/reference/jpa/transactions.html)
+  Reference supplied for grouping related deletion operations in a service transaction.
+- [Jakarta EE — Introduction to Jakarta Persistence](https://jakarta.ee/learn/docs/jakartaee-tutorial/current/persist/persistence-intro/persistence-intro.html)
+  Reference supplied for entity removal and cascading operations.
+
+Added: 15 November 2026.
