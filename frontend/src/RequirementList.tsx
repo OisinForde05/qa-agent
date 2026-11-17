@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import TestCaseGenerator from './TestCaseGenerator'
+import RequirementDeleteButton from './RequirementDeleteButton'
 
 type Requirement = {
   id: number
@@ -31,6 +32,12 @@ function RequirementList({ refreshKey }: RequirementListProps) {
   const [requirements, setRequirements] = useState<Requirement[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+
+  function handleRequirementDeleted(requirementId: number) {
+    setRequirements((previous) =>
+      previous.filter((requirement) => requirement.id !== requirementId),
+    )
+  }
 
   useEffect(() => {
     const controller = new AbortController()
@@ -118,6 +125,11 @@ function RequirementList({ refreshKey }: RequirementListProps) {
               />
             </div>
           </details>
+          <RequirementDeleteButton
+            requirementId={requirement.id}
+            requirementTitle={requirement.title}
+            onDeleted={handleRequirementDeleted}
+          />
         </article>
       ))}
     </section>
