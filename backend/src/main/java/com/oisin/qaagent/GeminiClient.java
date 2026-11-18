@@ -3,6 +3,8 @@ package com.oisin.qaagent;
 import java.net.SocketTimeoutException;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import jakarta.validation.Validator;
@@ -59,6 +61,60 @@ public class GeminiClient {
     }
 
     public DraftTestCases generate(Requirement requirement) {
+        String requestId = UUID.randomUUID().toString();
+        long startedAt = System.nanoTime();
+
+        logger.info(
+                "Gemini generation started: requestId={}, model={}",
+                requestId,
+                model
+        );
+
+        try {
+            DraftTestCases result = generateDrafts(requirement, requestId);
+
+            logger.info(
+                    "Gemini generation succeeded: requestId={}, model={}, "
+                            + "durationMs={}, testCases={}, requirementIssues={}",
+                    requestId,
+                    model,
+                    elapsedMillis(startedAt),
+                    result.testCases().size(),
+                    result.requirementIssues().size()
+            );
+
+            return result;
+
+        } catch (ResponseStatusException exception) {
+            logger.warn(
+                    "Gemini generation failed: requestId={}, model={}, "
+                            + "durationMs={}, applicationStatus={}, reason={}",
+                    requestId,
+                    model,
+                    elapsedMillis(startedAt),
+                    exception.getStatusCode().value(),
+                    exception.getReason()
+            );
+
+            throw exception;
+
+        } catch (RuntimeException exception) {
+            logger.error(
+                    "Gemini generation failed unexpectedly: requestId={}, "
+                            + "model={}, durationMs={}, failureType={}",
+                    requestId,
+                    model,
+                    elapsedMillis(startedAt),
+                    exception.getClass().getSimpleName()
+            );
+
+            throw exception;
+        }
+    }
+
+    private DraftTestCases generateDrafts(
+            Requirement requirement,
+            String requestId) {
         if (apiKey.isBlank() || model.isBlank()) {
             throw new ResponseStatusException(
                     HttpStatus.SERVICE_UNAVAILABLE,
@@ -133,7 +189,7 @@ public class GeminiClient {
 
             if (!violations.isEmpty()) {
                 violations.forEach(violation -> logger.warn(
-                        "Invalid draft field: {} — {}",
+                            "Invalid draft field: {} - {}",
                         violation.getPropertyPath(),
                         violation.getMessage()
                 ));
@@ -150,44 +206,47 @@ public class GeminiClient {
             return result;
 
         } catch (RestClientResponseException exception) {
-            if (exception.getStatusCode().value() == 429) {
+            int upstreamStatus = exception.getStatusCode().value();
+
+            logger.warn(
+                    "Gemini returned an HTTP error: requestId={}, upstreamStatus={}",
+                    requestId,
+                    upstreamStatus
+            );
+
+            throw httpFailure(upstreamStatus);
+
+        } catch (RestClientException exception) {
+            if (hasTimeoutCause(exception)) {
+                logger.warn(
+                        "Gemini connection or response timed out: requestId={}",
+                        requestId
+                );
+
                 throw new ResponseStatusException(
-                        HttpStatus.SERVICE_UNAVAILABLE,
-                        "Gemini's rate or quota limit was reached. Check usage before retrying."
+                        HttpStatus.GATEWAY_TIMEOUT,
+                        "The request to Gemini timed out. "
+                                + "Please wait briefly before trying again."
                 );
             }
 
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_GATEWAY,
-                    "Gemini rejected the request (HTTP "
-                            + exception.getStatusCode().value()
-                            + "). Check the API key, model, and project access."
-            );
+            if (exception instanceof ResourceAccessException) {
+                logger.warn(
+                        "Gemini connection failed: requestId={}, failureType={}",
+                        requestId,
+                        exception.getClass().getSimpleName()
+                );
 
-        } catch (ResourceAccessException exception) {
-            throw new ResponseStatusException(
-                    HttpStatus.GATEWAY_TIMEOUT,
-                    "Gemini could not be reached or the request timed out."
-            );
-
-        } catch (RestClientException exception) {
-            Throwable cause = exception;
-
-            while (cause != null) {
-                if (cause instanceof SocketTimeoutException) {
-                    logger.warn("Timed out while reading Gemini's response.");
-
-                    throw new ResponseStatusException(
-                            HttpStatus.GATEWAY_TIMEOUT,
-                            "Gemini took too long to respond. Please try again."
-                    );
-                }
-
-                cause = cause.getCause();
+                throw new ResponseStatusException(
+                        HttpStatus.BAD_GATEWAY,
+                        "Unable to communicate with Gemini. "
+                                + "Check the network connection and try again."
+                );
             }
 
             logger.warn(
-                    "Gemini HTTP response could not be read: {}",
+                    "Gemini response could not be read: requestId={}, failureType={}",
+                    requestId,
                     exception.getClass().getSimpleName()
             );
 
@@ -195,11 +254,86 @@ public class GeminiClient {
 
         } catch (JacksonException exception) {
             logger.warn(
-                    "Gemini JSON could not be converted to draft test cases: {}",
+                    "Gemini JSON processing failed: requestId={}, failureType={}",
+                    requestId,
                     exception.getClass().getSimpleName()
             );
             throw invalidResponse();
         }
+    }
+
+    private static long elapsedMillis(long startedAt) {
+        return TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startedAt);
+    }
+
+    static boolean hasTimeoutCause(Throwable exception) {
+        Throwable cause = exception;
+
+        while (cause != null) {
+            if (cause instanceof SocketTimeoutException) {
+                return true;
+            }
+
+            cause = cause.getCause();
+        }
+
+        return false;
+    }
+
+    static ResponseStatusException httpFailure(int upstreamStatus) {
+        return switch (upstreamStatus) {
+            case 400 -> new ResponseStatusException(
+                    HttpStatus.BAD_GATEWAY,
+                    "Gemini rejected the request as invalid (HTTP 400). "
+                            + "Check the backend request settings and model compatibility."
+            );
+
+            case 401, 403 -> new ResponseStatusException(
+                    HttpStatus.BAD_GATEWAY,
+                    "Gemini authentication or access failed (HTTP "
+                            + upstreamStatus
+                            + "). Check the API key and project permissions."
+            );
+
+            case 404 -> new ResponseStatusException(
+                    HttpStatus.BAD_GATEWAY,
+                    "The requested Gemini model or endpoint was not found (HTTP 404). "
+                            + "Check GEMINI_MODEL and the API version."
+            );
+
+            case 429 -> new ResponseStatusException(
+                    HttpStatus.TOO_MANY_REQUESTS,
+                    "Gemini's rate or quota limit was reached (HTTP 429). "
+                            + "Check API usage and available quota before retrying."
+            );
+
+            case 503 -> new ResponseStatusException(
+                    HttpStatus.SERVICE_UNAVAILABLE,
+                    "Gemini is temporarily unavailable or overloaded (HTTP 503). "
+                            + "Please try again shortly."
+            );
+
+            case 408, 504 -> new ResponseStatusException(
+                    HttpStatus.GATEWAY_TIMEOUT,
+                    "Gemini returned a timeout response (HTTP "
+                            + upstreamStatus
+                            + "). Please try again shortly."
+            );
+
+            case 500, 502 -> new ResponseStatusException(
+                    HttpStatus.BAD_GATEWAY,
+                    "Gemini returned a server error (HTTP "
+                            + upstreamStatus
+                            + "). Please try again shortly."
+            );
+
+            default -> new ResponseStatusException(
+                    HttpStatus.BAD_GATEWAY,
+                    "Gemini returned an unexpected HTTP error ("
+                            + upstreamStatus
+                            + "). Check the backend diagnostics."
+            );
+        };
     }
 
     private String extractText(GeminiResponse response) {
