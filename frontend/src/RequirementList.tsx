@@ -90,7 +90,13 @@ function RequirementList({ refreshKey }: RequirementListProps) {
     >
       <h2 id="requirements-heading">Saved requirements</h2>
 
-      {loading && <p role="status">Loading requirements...</p>}
+      {loading && (
+        <p role="status">
+          {requirements.length === 0
+            ? 'Loading requirements...'
+            : 'Refreshing requirements...'}
+        </p>
+      )}
 
       {error && <p role="alert">{error}</p>}
 
@@ -98,7 +104,7 @@ function RequirementList({ refreshKey }: RequirementListProps) {
         <p>No requirements have been saved yet.</p>
       )}
 
-      {!loading && !error && requirements.map((requirement) => (
+      {requirements.map((requirement) => (
         <article className="requirement-card" key={requirement.id}>
           <details className="requirement-details">
             <summary className="requirement-summary">
