@@ -84,58 +84,82 @@ function TestCaseCard({ testCase, onSaved, onDeleted }: Props) {
   }
 
   async function sendChange(
-    method: 'PUT' | 'PATCH',
-    path: string,
-    body: unknown,
-  ) {
-    if (busy) return
+  method: 'PUT' | 'PATCH',
+  path: string,
+  body: unknown,
+) {
+  if (busy) return
 
-    setBusy(true)
-    setError('')
-    setMessage('')
+  setBusy(true)
+  setError('')
+  setMessage('')
 
-    try {
-      const response = await fetch(path, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      })
+  const controller = new AbortController()
+  const timeout = window.setTimeout(() => controller.abort(), 30_000)
 
-      const data: unknown = await response.json().catch(() => null)
+  try {
+    const response = await fetch(path, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    })
 
-      if (!response.ok) {
-        const details =
-          typeof data === 'object' &&
-          data !== null &&
-          'message' in data &&
-          typeof data.message === 'string'
-            ? data.message
-            : `Could not save the change (HTTP ${response.status}).`
-
-        throw new Error(details)
+    const data: unknown = await response.json().catch((caught: unknown) => {
+      // Preserve timeout errors if reading the response was interrupted.
+      if (controller.signal.aborted) {
+        throw caught
       }
 
-      if (!isSavedTestCase(data) || data.id !== testCase.id) {
-        throw new Error('The backend returned an unexpected test case.')
-      }
+      return null
+    })
 
-      onSaved(data)
-      setEditing(false)
-      setMessage(
-        method === 'PUT'
-          ? 'Changes saved. This case requires review again.'
-          : `Test case marked ${data.status.toLowerCase()}.`,
+    if (!response.ok) {
+      const details =
+        typeof data === 'object' &&
+        data !== null &&
+        'message' in data &&
+        typeof data.message === 'string'
+          ? data.message
+          : `Could not save the change (HTTP ${response.status}).`
+
+      throw new Error(details)
+    }
+
+    if (!isSavedTestCase(data) || data.id !== testCase.id) {
+      throw new Error(
+        'An unexpected response was received. Refresh to check whether the change was saved.',
       )
-    } catch (error) {
+    }
+
+    onSaved(data)
+    setEditing(false)
+    setMessage(
+      method === 'PUT'
+        ? 'Changes saved. This case requires review again.'
+        : `Test case marked ${data.status.toLowerCase()}.`,
+    )
+  } catch (caught) {
+    if (controller.signal.aborted) {
       setError(
-        error instanceof Error
-          ? error.message
+        'The request timed out. The change may have been saved. Copy any unsaved edits, then refresh to check before trying again.',
+      )
+    } else if (caught instanceof TypeError) {
+      setError(
+        'Unable to confirm whether the change was saved. Check the backend connection, copy any unsaved edits, then refresh before trying again.',
+      )
+    } else {
+      setError(
+        caught instanceof Error
+          ? caught.message
           : 'Unable to save. Check the backend and try again.',
       )
-    } finally {
-      setBusy(false)
     }
+  } finally {
+    window.clearTimeout(timeout)
+    setBusy(false)
   }
+}
 
   async function saveDetails(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
