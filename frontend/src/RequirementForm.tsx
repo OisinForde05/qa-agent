@@ -30,62 +30,87 @@ function RequirementForm({ onSaved }: RequirementFormProps) {
   const [submitted, setSubmitted] = useState<Requirement | null>(null)
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
+  event.preventDefault()
 
-    if (submitting) return
+  if (submitting) return
 
-    setError('')
-    setSubmitted(null)
+  setError('')
+  setSubmitted(null)
 
-    const requirement: Omit<Requirement, 'id'> = {
-      title: title.trim(),
-      description: description.trim(),
-      acceptanceCriteria: acceptanceCriteria.trim(),
-    }
+  const requirement: Omit<Requirement, 'id'> = {
+    title: title.trim(),
+    description: description.trim(),
+    acceptanceCriteria: acceptanceCriteria.trim(),
+  }
 
-    if (
-      !requirement.title ||
-      !requirement.description ||
-      !requirement.acceptanceCriteria
-    ) {
-      setError('Complete all fields. Spaces alone are not accepted.')
+  if (
+    !requirement.title ||
+    !requirement.description ||
+    !requirement.acceptanceCriteria
+  ) {
+    setError('Complete all fields. Spaces alone are not accepted.')
+    return
+  }
+
+  setSubmitting(true)
+
+  const controller = new AbortController()
+  const timeout = window.setTimeout(() => controller.abort(), 30_000)
+
+  try {
+    const response = await fetch('/api/requirements', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(requirement),
+      signal: controller.signal,
+    })
+
+    if (!response.ok) {
+      const details: unknown = await response.json().catch(
+        (caught: unknown) => {
+          if (controller.signal.aborted) {
+            throw caught
+          }
+
+          return null
+        },
+      )
+
+      if (response.status >= 500) {
+        setError(
+          'The backend could not confirm submission. Check the saved requirements before trying again.',
+        )
+      } else if (isErrorResponse(details)) {
+        setError(details.message)
+      } else {
+        setError(
+          `The requirement could not be accepted (HTTP ${response.status}).`,
+        )
+      }
+
       return
     }
 
-    setSubmitting(true)
-
-    try {
-      const response = await fetch('/api/requirements', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requirement),
-      })
-
-      if (!response.ok) {
-        const details: unknown =
-          await response.json().catch(() => null)
-
-        if (response.status >= 500) {
-          setError('Backend unavailable. Check the backend and try again.')
-        } else if (isErrorResponse(details)) {
-          setError(details.message)
-        } else {
-          setError(`The requirement could not be accepted (HTTP ${response.status}).`)
-        }
-        return
-      }
-
-      const accepted: Requirement = await response.json()
-      setSubmitted(accepted)
-      onSaved()
-    } catch {
-      setError('The server could not process the requirement. Please try again.')
-    } finally {
-      setSubmitting(false)
+    const accepted: Requirement = await response.json()
+    setSubmitted(accepted)
+    onSaved()
+  } catch {
+    if (controller.signal.aborted) {
+      setError(
+        'Submission timed out. The requirement may have been saved. Copy your entered details, then refresh and check the saved list before submitting again.',
+      )
+    } else {
+      setError(
+        'Unable to confirm whether the requirement was saved. Check the backend connection, copy your entered details, then refresh and check the saved list before submitting again.',
+      )
     }
+  } finally {
+    window.clearTimeout(timeout)
+    setSubmitting(false)
   }
+}
 
   return (
     <section className="requirement-panel">
